@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>clash royale</title>
+<style>
+body, html {margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:sans-serif;}
+#startup, #load, #deck, #game {position:absolute;top:0;left:0;width:100%;height:100%;display:flex;justify-content:center;align-items:center;flex-direction:column;}
+#startup video {width:100%;height:100%;object-fit:cover;}
+.hidden {display:none;}
+button {padding:10px 20px;font-size:1.2em;margin-top:20px;cursor:pointer;}
+.card {border:2px solid #fff;padding:10px;margin:5px;cursor:pointer;}
+.selected {border-color: gold;}
+#elixir-bar {position:absolute;bottom:10px;font-size:1.2em;color:white;}
+.tower {font-size:2em;margin:10px;}
+#arena {position:relative;width:100%;height:60%;background:#333;}
+.unit {position:absolute;top:50%;transform:translateY(-50%);color:white;}
+</style>
+</head>
+<body>
+
+<!-- STARTUP SCREEN -->
+<div id="startup">
+    <video src="startup.mp4" autoplay muted></video>
+    <button onclick="toLoad()">Press Start</button>
+</div>
+
+<!-- LOADING SCREEN -->
+<div id="load" class="hidden">
+    <h1 style="color:white;">Loading...</h1>
+</div>
+
+<!-- DECK SELECTION -->
+<div id="deck" class="hidden">
+    <h1 style="color:white;">Select Your Deck (3 cards)</h1>
+    <div id="deck-options"></div>
+    <button onclick="startGame()">Start Game</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game" class="hidden">
+    <div id="player-tower" class="tower">🏰 300</div>
+    <div id="arena"></div>
+    <div id="enemy-tower" class="tower">🏰 300</div>
+    <div id="hand"></div>
+    <div id="elixir-bar">Elixir: <span id="elixir-count">0</span>/10</div>
+</div>
+
+<script>
+// === CARD DATA ===
+const cards = [
+  {name:"Knight", hp:100, damage:20, speed:1, cost:3},
+  {name:"Archer", hp:50, damage:15, speed:2, cost:2},
+  {name:"Giant", hp:300, damage:30, speed:0.5, cost:5},
+  {name:"Wizard", hp:60, damage:40, speed:1.5, cost:4}
+];
+
+let playerDeck = [];
+
+// === STARTUP -> LOAD -> DECK FLOW ===
+function toLoad(){
+    document.getElementById('startup').classList.add('hidden');
+    document.getElementById('load').classList.remove('hidden');
+    setTimeout(()=>{ // simulate loading
+        document.getElementById('load').classList.add('hidden');
+        document.getElementById('deck').classList.remove('hidden');
+        showDeckOptions();
+    }, 2000);
+}
+
+// === DECK SELECTION ===
+function showDeckOptions(){
+    const deckDiv = document.getElementById('deck-options');
+    deckDiv.innerHTML = '';
+    cards.forEach((c,i)=>{
+        let btn = document.createElement('div');
+        btn.textContent = `${c.name} (Cost: ${c.cost})`;
+        btn.classList.add('card');
+        btn.onclick = ()=>selectCard(i, btn);
+        deckDiv.appendChild(btn);
+    });
+}
+
+function selectCard(index, element){
+    if(playerDeck.includes(cards[index])){ // deselect
+        playerDeck = playerDeck.filter(c=>c!==cards[index]);
+        element.classList.remove('selected');
+    } else if(playerDeck.length<3){
+        playerDeck.push(cards[index]);
+        element.classList.add('selected');
+    }
+}
+
+// === START GAME ===
+function startGame(){
+    if(playerDeck.length!==3){alert("Pick 3 cards!"); return;}
+    document.getElementById('deck').classList.add('hidden');
+    document.getElementById('game').classList.remove('hidden');
+    initGame();
+}
+
+// === GAME LOGIC ===
+let elixir = 0;
+let maxElixir = 10;
+let playerTowers = 300;
+let enemyTowers = 300;
+let arena = document.getElementById('arena');
+let elixirCount = document.getElementById('elixir-count');
+
+function initGame(){
+    setInterval(()=>{ if(elixir<maxElixir) elixir++; elixirCount.textContent=elixir; },1000);
+    setInterval(aiPlay,3000);
+    createHand();
+}
+
+function createHand(){
+    const hand = document.getElementById('hand');
+    hand.innerHTML='';
+    playerDeck.forEach((c,i)=>{
+        let btn = document.createElement('button');
+        btn.textContent=c.name;
+        btn.onclick=()=>playCard(i);
+        hand.appendChild(btn);
+    });
+}
+
+function playCard(i){
+    let card = playerDeck[i];
+    if(elixir>=card.cost){
+        elixir-=card.cost;
+        elixirCount.textContent=elixir;
+        spawnUnit(card,'player');
+    }
+}
+
+function aiPlay(){
+    let affordable = cards.filter(c=>c.cost<=elixir);
+    if(affordable.length>0){
+        let card = affordable[Math.floor(Math.random()*affordable.length)];
+        spawnUnit(card,'enemy');
+        elixir-=card.cost;
+        elixirCount.textContent=elixir;
+    }
+}
+
+function spawnUnit(card,owner){
+    let unit=document.createElement('div');
+    unit.classList.add('unit');
+    unit.textContent=card.name[0];
+    unit.dataset.hp=card.hp;
+    unit.dataset.damage=card.damage;
+    unit.dataset.owner=owner;
+    unit.dataset.speed=card.speed;
+    arena.appendChild(unit);
+    moveUnit(unit);
+}
+
+function moveUnit(unit){
+    let pos=0;
+    let interval=setInterval(()=>{
+        pos+=parseFloat(unit.dataset.speed);
+        unit.style.left = (unit.dataset.owner==='player'?pos:400-pos)+'px';
+        if(pos>400){
+            if(unit.dataset.owner==='player') enemyTowers-=unit.dataset.damage;
+            else playerTowers-=unit.dataset.damage;
+            updateTowers();
+            unit.remove();
+            clearInterval(interval);
+        }
+    },50);
+}
+
+function updateTowers(){
+    document.getElementById('player-tower').textContent='🏰 '+playerTowers;
+    document.getElementById('enemy-tower').textContent='🏰 '+enemyTowers;
+    if(playerTowers<=0) alert('You Lose 😢');
+    if(enemyTowers<=0) alert('You Win 🎉');
+}
+</script>
+
+</body>
+</html>
