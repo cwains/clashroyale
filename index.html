@@ -21,31 +21,64 @@ button {padding:10px 20px;font-size:1.2em;margin-top:20px;cursor:pointer;}
 <body>
 
 <!-- STARTUP SCREEN -->
-<div id="startup">
-    <video src="startup.mp4" autoplay muted></video>
-    <button onclick="toLoad()">Press Start</button>
+<div id="startup-screen">
+    <video id="startup-video" src="startup.mp4" autoplay muted playsinline></video>
+    <button id="start-btn">Press Start</button>
 </div>
 
-<!-- LOADING SCREEN -->
-<div id="load" class="hidden">
-    <h1 style="color:white;">Loading...</h1>
+<!-- EVERYTHING ELSE -->
+<div id="game-container" class="hidden">
+    <div id="load-screen" class="hidden">
+        <h1 style="color:white;">Loading...</h1>
+    </div>
+
+    <div id="deck-screen" class="hidden">
+        <h1 style="color:white;">Select Your Deck (3 cards)</h1>
+        <div id="deck-options"></div>
+        <button id="deck-start-btn">Start Game</button>
+    </div>
+
+    <div id="game-screen" class="hidden">
+        <div id="player-tower" class="tower">🏰 300</div>
+        <div id="arena"></div>
+        <div id="enemy-tower" class="tower">🏰 300</div>
+        <div id="hand"></div>
+        <div id="elixir-bar">Elixir: <span id="elixir-count">0</span>/10</div>
+    </div>
 </div>
 
-<!-- DECK SELECTION -->
-<div id="deck" class="hidden">
-    <h1 style="color:white;">Select Your Deck (3 cards)</h1>
-    <div id="deck-options"></div>
-    <button onclick="startGame()">Start Game</button>
-</div>
+<style>
+html, body {margin:0; padding:0; width:100%; height:100%; overflow:hidden; font-family:sans-serif;}
+.hidden {display:none;}
+#startup-screen {position:fixed; top:0; left:0; width:100%; height:100%; background:black; display:flex; justify-content:center; align-items:center; flex-direction:column; z-index:1000;}
+#startup-screen video {width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; z-index:1;}
+#startup-screen button {z-index:2; padding:20px 40px; font-size:2em; cursor:pointer;}
+#game-container {width:100%; height:100%; position:relative;}
+/* add your game styling here */
+</style>
 
-<!-- GAME SCREEN -->
-<div id="game" class="hidden">
-    <div id="player-tower" class="tower">🏰 300</div>
-    <div id="arena"></div>
-    <div id="enemy-tower" class="tower">🏰 300</div>
-    <div id="hand"></div>
-    <div id="elixir-bar">Elixir: <span id="elixir-count">0</span>/10</div>
-</div>
+<script>
+// STARTUP SCREEN FLOW
+const startupScreen = document.getElementById('startup-screen');
+const gameContainer = document.getElementById('game-container');
+const startBtn = document.getElementById('start-btn');
+
+startBtn.addEventListener('click', () => {
+    // hide startup screen completely
+    startupScreen.classList.add('hidden');
+
+    // show game container and load screen
+    gameContainer.classList.remove('hidden');
+    const loadScreen = document.getElementById('load-screen');
+    loadScreen.classList.remove('hidden');
+
+    // simulate loading delay
+    setTimeout(() => {
+        loadScreen.classList.add('hidden');
+        document.getElementById('deck-screen').classList.remove('hidden');
+    }, 2000);
+});
+</script>
 
 <script>
 // === CARD DATA ===
